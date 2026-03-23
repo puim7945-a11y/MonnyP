@@ -2,183 +2,231 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MyFinance Cloud</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>FinancePro - Pocket Mini</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap');
-        body { font-family: 'Kanit', sans-serif; background-color: #f8fafc; }
-        .animate-in { animation: fadeIn 0.5s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @import url('https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap');
+        body { font-family: 'Kanit', sans-serif; background-color: #f8fbff; color: #334155; touch-action: manipulation; }
+        .pocket-item { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); border: 2px solid transparent; }
+        .pocket-selected { border-color: #3b82f6; background-color: #eff6ff; transform: scale(1.05); box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.1); }
+        .hide-scroll::-webkit-scrollbar { display: none; }
+        .make-gradient { background: linear-gradient(135deg, #1e293b 0%, #334155 100%); }
     </style>
 </head>
 <body class="pb-24">
 
-    <div class="bg-indigo-700 text-white pt-10 pb-16 px-6 rounded-b-[3rem] shadow-2xl">
-        <div class="max-w-md mx-auto text-center">
-            <h1 class="text-sm opacity-80 uppercase tracking-widest mb-2">ยอดเงินคงเหลือสุทธิ</h1>
-            <h2 id="total-balance" class="text-5xl font-bold mb-6">฿ 0.00</h2>
-            
-            <div class="grid grid-cols-2 gap-4 bg-white/10 p-4 rounded-3xl backdrop-blur-md">
-                <div class="border-r border-white/20">
-                    <p class="text-xs opacity-70">เงินต้น</p>
-                    <p id="display-initial" class="text-lg font-semibold">฿ 0</p>
-                </div>
-                <div>
-                    <p class="text-xs opacity-70">กำไร/ขาดทุน</p>
-                    <p id="display-net" class="text-lg font-semibold text-emerald-300">฿ 0</p>
-                </div>
+    <div class="make-gradient pt-8 pb-12 px-6 rounded-b-[2.5rem] shadow-lg text-white">
+        <div class="max-w-md mx-auto flex justify-between items-center">
+            <div>
+                <p class="text-[10px] opacity-60 uppercase tracking-widest">Available Balance</p>
+                <h1 id="total-balance" class="text-3xl font-bold tracking-tight">฿ 0.00</h1>
             </div>
-        </div>
-    </div>
-
-    <div class="max-w-md mx-auto px-4 -mt-8">
-        <div class="bg-white p-6 rounded-3xl shadow-xl mb-6 animate-in">
-            <div class="space-y-3">
-                <input type="text" id="desc-input" placeholder="รายการ (เช่น ค่าเน็ต, ของเล่น)" 
-                    class="w-full p-4 bg-gray-50 rounded-2xl border-none focus:ring-2 focus:ring-indigo-500 outline-none transition-all">
-                <input type="number" id="amount-input" placeholder="จำนวนเงิน" 
-                    class="w-full p-4 bg-gray-50 rounded-2xl border-none focus:ring-2 focus:ring-indigo-500 outline-none transition-all">
-                
-                <div class="grid grid-cols-2 gap-3 pt-2">
-                    <button onclick="addRecord('income')" class="bg-emerald-500 hover:bg-emerald-600 text-white py-4 rounded-2xl font-bold shadow-lg shadow-emerald-100 active:scale-95 transition">
-                        <i class="fas fa-plus-circle mr-1"></i> รายรับ
-                    </button>
-                    <button onclick="addRecord('expense')" class="bg-rose-500 hover:bg-rose-600 text-white py-4 rounded-2xl font-bold shadow-lg shadow-rose-100 active:scale-95 transition">
-                        <i class="fas fa-minus-circle mr-1"></i> รายจ่าย
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <div id="setup-section" class="mb-6 px-2">
-            <button onclick="toggleSetup()" class="text-xs text-indigo-600 font-bold bg-indigo-50 px-4 py-2 rounded-full hover:bg-indigo-100">
-                <i class="fas fa-cog mr-1"></i> ตั้งค่าเงินต้นใหม่
+            <button onclick="switchTab('config')" class="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center border border-white/10">
+                <i class="fas fa-plus text-sm"></i>
             </button>
-            <div id="setup-box" class="hidden mt-3 p-4 bg-white rounded-2xl shadow-md border border-indigo-100">
-                <p class="text-xs text-gray-500 mb-2">ระบุจำนวนเงินที่มีอยู่จริงในบัญชีปัจจุบัน</p>
-                <div class="flex gap-2">
-                    <input type="number" id="initial-input" class="flex-1 p-2 bg-gray-50 rounded-xl outline-none border border-gray-100">
-                    <button onclick="updateInitial()" class="bg-indigo-600 text-white px-4 rounded-xl text-sm font-bold">บันทึก</button>
-                </div>
-            </div>
-        </div>
-
-        <h3 class="font-bold text-gray-700 mb-4 px-2 flex justify-between">
-            <span>ประวัติรายการ</span>
-            <span id="record-count" class="text-xs font-normal text-gray-400">0 รายการ</span>
-        </h3>
-        <div id="history-list" class="space-y-3">
-            <div class="text-center py-10 text-gray-400 text-sm">กำลังโหลดข้อมูลจาก Cloud...</div>
         </div>
     </div>
 
-    <div class="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-md border-t p-4 flex justify-around items-center shadow-2xl">
-        <button class="text-indigo-600"><i class="fas fa-home text-xl"></i></button>
-        <button class="text-gray-400"><i class="fas fa-chart-line text-xl"></i></button>
-        <button onclick="location.reload()" class="text-gray-400"><i class="fas fa-sync-alt text-xl"></i></button>
+    <div class="max-w-xs mx-auto -mt-6 bg-white/80 backdrop-blur shadow-sm p-1 rounded-2xl flex border border-slate-100 relative z-10">
+        <button onclick="switchTab('main')" id="btn-main" class="flex-1 py-1.5 rounded-xl text-xs font-bold bg-slate-900 text-white transition-all">Wallet</button>
+        <button onclick="switchTab('stats')" id="btn-stats" class="flex-1 py-1.5 rounded-xl text-xs font-bold text-slate-400 transition-all">Insights</button>
+    </div>
+
+    <div id="tab-main" class="p-4 max-w-md mx-auto">
+        <div class="bg-white rounded-3xl p-5 shadow-sm border border-slate-50 mb-6 mt-2">
+            <div class="flex items-center gap-3 mb-4">
+                <input type="text" id="desc-input" placeholder="Note..." class="flex-1 text-sm font-medium border-none focus:ring-0 p-0 placeholder:text-slate-300">
+                <input type="number" id="amount-input" placeholder="0.00" class="w-24 text-right text-xl font-bold border-none focus:ring-0 p-0 text-slate-800">
+            </div>
+
+            <p class="text-[10px] font-bold text-slate-400 mb-2 uppercase">Select Pocket</p>
+            <div id="pocket-selector" class="flex gap-3 overflow-x-auto pb-4 hide-scroll">
+                </div>
+
+            <div class="grid grid-cols-2 gap-3 mt-2">
+                <button onclick="addRecord('expense')" class="bg-red-500 text-slate-900 py-3 rounded-2xl font-bold text-sm active:bg-slate-100 transition">รายจ่าย</button>
+                <button onclick="addRecord('income')" class="bg-green-500 text-white py-3 rounded-2xl font-bold text-sm shadow-md shadow-blue-100 active:scale-95 transition">รายรับ</button>
+            </div>
+        </div>
+
+        <div id="history-list" class="space-y-2">
+            </div>
+    </div>
+
+    <div id="tab-config" class="hidden p-6 max-w-md mx-auto">
+        <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100">
+            <h3 class="font-bold text-slate-800 mb-4">New Cloud Pocket</h3>
+            <div class="space-y-4">
+                <input type="text" id="new-cat-name" placeholder="ชื่อพ็อกเก็ต..." class="w-full bg-slate-50 border-none p-3 rounded-xl text-sm outline-none">
+                
+                <p class="text-[10px] font-bold text-slate-400 uppercase">เลือกสีและไอคอน</p>
+                <div class="flex gap-2">
+                    <input type="color" id="new-cat-color" value="#3b82f6" class="w-10 h-10 rounded-lg bg-transparent border-none cursor-pointer">
+                    <select id="new-cat-icon" class="flex-1 bg-slate-50 border-none rounded-xl px-3 text-sm text-slate-600 outline-none">
+                        <option value="fa-wallet">💼 Wallet</option>
+                        <option value="fa-utensils">🍴 Food</option>
+                        <option value="fa-car">🚗 Travel</option>
+                        <option value="fa-gamepad">🎮 Game</option>
+                        <option value="fa-heart">💖 Health</option>
+                        <option value="fa-shopping-cart">🛒 Shop</option>
+                        <option value="fa-house">🏠 Rent</option>
+                    </select>
+                </div>
+                
+                <button onclick="addNewCategory()" class="w-full bg-blue-500 text-white py-3 rounded-xl font-bold text-sm mt-2">สร้างพ็อกเก็ต</button>
+                <button onclick="switchTab('main')" class="w-full text-slate-400 text-xs font-medium">ยกเลิก</button>
+            </div>
+        </div>
+        
+        <div id="pocket-manager" class="mt-6 space-y-2"></div>
+    </div>
+
+    <div id="tab-stats" class="hidden p-6 max-w-md mx-auto">
+        <div class="bg-white rounded-[2rem] p-6 shadow-sm mb-4 flex justify-center">
+            <div style="width: 180px; height: 180px;">
+                <canvas id="miniChart"></canvas>
+            </div>
+        </div>
+        <div id="stat-list" class="space-y-2"></div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, doc, setDoc, onSnapshot, collection, query, orderBy, addDoc, serverTimestamp, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, doc, onSnapshot, addDoc, deleteDoc, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // --- ⚠️ วาง Config ของคุณจากรูปสุดท้ายที่นี่ ⚠️ ---
+        // --- ใช้ Config ของคุณตรงนี้ ---
         const firebaseConfig = {
-  apiKey: "AIzaSyANzxX65qqpLWnyl_nk7dORQQDRXK25CD8",
-  authDomain: "puim-f05ea.firebaseapp.com",
-  projectId: "puim-f05ea",
-  storageBucket: "puim-f05ea.firebasestorage.app",
-  messagingSenderId: "773999792990",
-  appId: "1:773999792990:web:bb24c283744adf539635cf",
-  measurementId: "G-LE2ZM330V2"
-};
+            apiKey: "", 
+            authDomain: "puim-f05ea.firebaseapp.com",
+            projectId: "puim-f05ea",
+            appId: "1:773999792990:web:bb24c28374adf539635cf"
+        };
+
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-        const userDoc = doc(db, "settings", "main_config");
-        const transCol = collection(db, "transactions");
+        
+        let categories = {};
+        let selectedPocket = "";
+        let myChart;
 
-        // 1. ดึงเงินต้น (Real-time)
-        onSnapshot(userDoc, (doc) => {
-            if (doc.exists()) {
-                window.initialBalance = doc.data().initial || 0;
-                document.getElementById('display-initial').innerText = `฿ ${window.initialBalance.toLocaleString()}`;
-                calculateTotal();
-            }
+        // Load Categories with Icons
+        onSnapshot(collection(db, "categories"), (snap) => {
+            const selector = document.getElementById('pocket-selector');
+            const manager = document.getElementById('pocket-manager');
+            selector.innerHTML = ''; manager.innerHTML = '';
+            categories = {};
+
+            snap.forEach(d => {
+                const cat = d.data();
+                categories[cat.name] = { color: cat.color, icon: cat.icon || 'fa-wallet' };
+
+                selector.innerHTML += `
+                    <div onclick="selectPocket('${cat.name}', this)" class="pocket-item min-w-[70px] flex flex-col items-center p-3 rounded-2xl bg-white border border-slate-100 cursor-pointer">
+                        <div class="w-8 h-8 rounded-xl mb-1 flex items-center justify-center text-white text-xs shadow-sm" style="background-color: ${cat.color}">
+                            <i class="fas ${cat.icon || 'fa-wallet'}"></i>
+                        </div>
+                        <span class="text-[9px] font-bold text-slate-500 truncate w-full text-center">${cat.name}</span>
+                    </div>`;
+
+                manager.innerHTML += `
+                    <div class="flex items-center justify-between bg-white p-3 rounded-xl border border-slate-50">
+                        <div class="flex items-center gap-3 text-sm font-bold">
+                            <i class="fas ${cat.icon || 'fa-wallet'}" style="color: ${cat.color}"></i>
+                            <span>${cat.name}</span>
+                        </div>
+                        <button onclick="deleteDoc(doc(window.db, 'categories', '${d.id}'))" class="text-slate-200 hover:text-rose-400"><i class="fas fa-times"></i></button>
+                    </div>`;
+            });
         });
 
-        // 2. ดึงประวัติรายการ (Real-time)
-        const q = query(transCol, orderBy("timestamp", "desc"));
-        onSnapshot(q, (snapshot) => {
+        window.selectPocket = (name, el) => {
+            selectedPocket = name;
+            document.querySelectorAll('.pocket-item').forEach(opt => opt.classList.remove('pocket-selected'));
+            el.classList.add('pocket-selected');
+        };
+
+        // Real-time Data
+        onSnapshot(query(collection(db, "transactions"), orderBy("timestamp", "desc")), (snap) => {
             const list = document.getElementById('history-list');
             list.innerHTML = '';
-            let net = 0;
-            let count = 0;
+            let balance = 0, expData = {};
 
-            snapshot.forEach((doc) => {
-                const r = doc.data();
-                const id = doc.id;
-                net += r.amount;
-                count++;
-                const isExp = r.amount < 0;
-                const dateStr = r.timestamp ? new Date(r.timestamp.toDate()).toLocaleString('th-TH', {hour:'2-digit', minute:'2-digit', day:'2-digit', month:'short'}) : 'กำลังบันทึก...';
+            snap.forEach(d => {
+                const r = d.data();
+                const amt = parseFloat(r.amount);
+                balance += amt;
+                const cat = categories[r.category] || {color: '#cbd5e1', icon: 'fa-tag'};
+                if(amt < 0) expData[r.category] = (expData[r.category] || 0) + Math.abs(amt);
 
                 list.innerHTML += `
-                    <div class="bg-white p-4 rounded-2xl shadow-sm flex justify-between items-center border-l-4 ${isExp ? 'border-rose-400' : 'border-emerald-400'} animate-in group">
-                        <div onclick="deleteItem('${id}')" class="cursor-pointer">
-                            <p class="font-semibold text-gray-800">${r.text}</p>
-                            <p class="text-[10px] text-gray-400">${dateStr}</p>
+                    <div class="bg-white p-3 rounded-2xl flex items-center gap-3 border border-slate-50">
+                        <div class="w-9 h-9 rounded-xl flex items-center justify-center text-white text-xs" style="background: ${cat.color}">
+                            <i class="fas ${cat.icon}"></i>
+                        </div>
+                        <div class="flex-1">
+                            <p class="font-bold text-slate-700 text-xs">${r.text}</p>
+                            <p class="text-[9px] text-slate-400 font-medium">${r.category}</p>
                         </div>
                         <div class="text-right">
-                            <p class="font-bold ${isExp ? 'text-rose-500' : 'text-emerald-500'}">
-                                ${isExp ? '-' : '+'}${Math.abs(r.amount).toLocaleString()}
-                            </p>
+                            <p class="text-sm font-bold ${amt < 0 ? 'text-slate-900' : 'text-blue-500'}">${amt < 0 ? '-' : '+'}${Math.abs(amt).toLocaleString()}</p>
                         </div>
                     </div>`;
             });
-
-            window.netAmount = net;
-            document.getElementById('display-net').innerText = `฿ ${net.toLocaleString()}`;
-            document.getElementById('display-net').className = `text-lg font-semibold ${net >= 0 ? 'text-emerald-300' : 'text-rose-300'}`;
-            document.getElementById('record-count').innerText = `${count} รายการ`;
-            calculateTotal();
+            document.getElementById('total-balance').innerText = `฿ ${balance.toLocaleString()}`;
+            updateChart(expData);
         });
 
-        // Functions
-        window.updateInitial = async () => {
-            const val = document.getElementById('initial-input').value;
-            if(!val) return;
-            await setDoc(userDoc, { initial: parseFloat(val) });
-            document.getElementById('setup-box').classList.add('hidden');
+        window.updateChart = (data) => {
+            const ctx = document.getElementById('miniChart').getContext('2d');
+            const labels = Object.keys(data);
+            const colors = labels.map(l => categories[l]?.color || "#e2e8f0");
+            if(myChart) myChart.destroy();
+            myChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: { labels, datasets: [{ data: Object.values(data), backgroundColor: colors, borderWidth: 4, borderColor: '#fff' }] },
+                options: { cutout: '85%', plugins: { legend: { display: false } } }
+            });
+            document.getElementById('stat-list').innerHTML = labels.map(l => `
+                <div class="flex justify-between bg-white p-3 rounded-xl text-xs font-bold border border-slate-50">
+                    <span style="color: ${categories[l]?.color}">● ${l}</span>
+                    <span>฿ ${data[l].toLocaleString()}</span>
+                </div>`).join('');
         };
 
         window.addRecord = async (type) => {
             const desc = document.getElementById('desc-input').value;
             const amt = document.getElementById('amount-input').value;
-            if(!desc || !amt) return alert("กรุณากรอกข้อมูลให้ครบครับ");
-            
-            await addDoc(transCol, {
-                text: desc,
-                amount: type === 'expense' ? -Math.abs(amt) : Math.abs(amt),
-                timestamp: serverTimestamp()
+            if(!desc || !amt || !selectedPocket) return;
+            await addDoc(collection(db, "transactions"), {
+                text: desc, amount: type === 'expense' ? -Math.abs(amt) : Math.abs(amt),
+                category: selectedPocket, timestamp: serverTimestamp()
             });
-            document.getElementById('desc-input').value = '';
-            document.getElementById('amount-input').value = '';
+            document.getElementById('desc-input').value = ''; document.getElementById('amount-input').value = '';
         };
 
-        window.deleteItem = async (id) => {
-            if(confirm("ต้องการลบรายการนี้ใช่ไหม?")) {
-                await deleteDoc(doc(db, "transactions", id));
-            }
+        window.addNewCategory = async () => {
+            const name = document.getElementById('new-cat-name').value;
+            const color = document.getElementById('new-cat-color').value;
+            const icon = document.getElementById('new-cat-icon').value;
+            if(!name) return;
+            await addDoc(collection(db, "categories"), { name, color, icon });
+            document.getElementById('new-cat-name').value = '';
+            switchTab('main');
         };
 
-        function calculateTotal() {
-            const total = (window.initialBalance || 0) + (window.netAmount || 0);
-            document.getElementById('total-balance').innerText = `฿ ${total.toLocaleString()}`;
-        }
-
-        window.toggleSetup = () => document.getElementById('setup-box').classList.toggle('hidden');
+        window.switchTab = (t) => {
+            ['main', 'stats', 'config'].forEach(id => {
+                document.getElementById('tab-'+id).classList.toggle('hidden', id !== t);
+                if(id !== 'config') {
+                    const btn = document.getElementById('btn-'+id);
+                    btn.className = id === t ? 'flex-1 py-1.5 rounded-xl text-xs font-bold bg-slate-900 text-white transition-all' : 'flex-1 py-1.5 rounded-xl text-xs font-bold text-slate-400 transition-all';
+                }
+            });
+        };
+        window.db = db; window.deleteDoc = deleteDoc; window.doc = doc;
     </script>
 </body>
 </html>
