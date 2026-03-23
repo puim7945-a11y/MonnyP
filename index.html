@@ -1,232 +1,677 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>FinancePro - Pocket Mini</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap');
-        body { font-family: 'Kanit', sans-serif; background-color: #f8fbff; color: #334155; touch-action: manipulation; }
-        .pocket-item { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); border: 2px solid transparent; }
-        .pocket-selected { border-color: #3b82f6; background-color: #eff6ff; transform: scale(1.05); box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.1); }
-        .hide-scroll::-webkit-scrollbar { display: none; }
-        .make-gradient { background: linear-gradient(135deg, #1e293b 0%, #334155 100%); }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>FinancePro</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+body{font-family:'Kanit',sans-serif;background:#f0f4f9;color:#1e293b;-webkit-tap-highlight-color:transparent;overscroll-behavior:none}
+@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.slide-up{animation:slideUp .35s cubic-bezier(.22,1,.36,1) both}
+.skeleton{background:linear-gradient(90deg,#e2e8f0 25%,#f1f5f9 50%,#e2e8f0 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:1rem}
+.pocket-item{transition:all .2s cubic-bezier(.34,1.56,.64,1);cursor:pointer}
+.pocket-selected{transform:scale(1.06);box-shadow:0 6px 20px -4px rgba(59,130,246,.35);border-color:#3b82f6!important;background:#eff6ff!important}
+.no-scroll::-webkit-scrollbar{display:none}
+.no-scroll{-ms-overflow-style:none;scrollbar-width:none}
+.hdr{background:linear-gradient(145deg,#0f172a 0%,#1e3a5f 60%,#1e293b 100%)}
+.nav-btn{transition:all .2s;color:#94a3b8}
+.nav-btn.active{color:#3b82f6}
+.nav-dot{width:4px;height:4px;background:#3b82f6;border-radius:999px;margin:2px auto 0;opacity:0;transform:scale(0);transition:all .2s}
+.nav-btn.active .nav-dot{opacity:1;transform:scale(1)}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+.record-row:active{transform:scale(.98)}
+.budget-bar-inner{transition:width .6s cubic-bezier(.34,1,.64,1)}
+.modal-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.5);backdrop-filter:blur(6px);z-index:100;display:flex;align-items:flex-end;justify-content:center;animation:fadeIn .2s ease}
+.modal-sheet{background:#fff;border-radius:2.5rem 2.5rem 0 0;width:100%;max-width:28rem;padding:2rem;animation:slideUp .3s cubic-bezier(.22,1,.36,1)}
+.toast{position:fixed;bottom:5.5rem;left:50%;transform:translateX(-50%);background:#1e293b;color:#fff;padding:.6rem 1.4rem;border-radius:999px;font-size:.75rem;font-weight:600;z-index:200;white-space:nowrap;animation:slideUp .3s ease;pointer-events:none}
+.spinner{width:1.2rem;height:1.2rem;border:2.5px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;display:inline-block}
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:3rem 1rem;gap:1rem;opacity:.5}
+.empty i{font-size:2.5rem;color:#94a3b8}
+.empty p{font-size:.8rem;font-weight:600;color:#94a3b8;text-align:center}
+.period-tab{padding:.4rem 1rem;border-radius:999px;font-size:.7rem;font-weight:700;cursor:pointer;transition:all .2s;color:rgba(255,255,255,.5);background:transparent;border:none}
+.period-tab.active{background:rgba(255,255,255,.2);color:#fff}
+.filter-chip{padding:.3rem .9rem;border-radius:999px;font-size:.65rem;font-weight:700;cursor:pointer;transition:all .2s;background:#f1f5f9;color:#64748b;white-space:nowrap;border:none}
+.filter-chip.active{background:#1e293b;color:#fff}
+input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+#app-content{overflow-y:auto;-webkit-overflow-scrolling:touch}
+</style>
 </head>
-<body class="pb-24">
+<body class="flex flex-col h-screen overflow-hidden">
 
-    <div class="make-gradient pt-8 pb-12 px-6 rounded-b-[2.5rem] shadow-lg text-white">
-        <div class="max-w-md mx-auto flex justify-between items-center">
-            <div>
-                <p class="text-[10px] opacity-60 uppercase tracking-widest">Available Balance</p>
-                <h1 id="total-balance" class="text-3xl font-bold tracking-tight">฿ 0.00</h1>
-            </div>
-            <button onclick="switchTab('config')" class="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center border border-white/10">
-                <i class="fas fa-plus text-sm"></i>
-            </button>
+<div id="app-content" class="flex-1 overflow-y-auto pb-24">
+
+  <!-- HEADER -->
+  <div class="hdr pt-12 pb-20 px-6 rounded-b-[3rem] shadow-2xl text-white relative overflow-hidden">
+    <div class="absolute -top-10 -right-10 w-48 h-48 bg-blue-500/10 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="max-w-md mx-auto">
+      <div class="flex justify-between items-start mb-4">
+        <div>
+          <p class="text-[10px] opacity-40 uppercase tracking-widest font-semibold mb-1">ยอดเงินรวม</p>
+          <h1 id="total-balance" class="text-4xl font-bold tracking-tight">฿ 0.00</h1>
+          <div class="flex gap-3 mt-2">
+            <span class="text-[10px] opacity-50">รายรับ <span id="hdr-income" class="text-green-400 font-bold">฿0</span></span>
+            <span class="text-[10px] opacity-50">รายจ่าย <span id="hdr-expense" class="text-red-400 font-bold">฿0</span></span>
+          </div>
         </div>
-    </div>
-
-    <div class="max-w-xs mx-auto -mt-6 bg-white/80 backdrop-blur shadow-sm p-1 rounded-2xl flex border border-slate-100 relative z-10">
-        <button onclick="switchTab('main')" id="btn-main" class="flex-1 py-1.5 rounded-xl text-xs font-bold bg-slate-900 text-white transition-all">Wallet</button>
-        <button onclick="switchTab('stats')" id="btn-stats" class="flex-1 py-1.5 rounded-xl text-xs font-bold text-slate-400 transition-all">Insights</button>
-    </div>
-
-    <div id="tab-main" class="p-4 max-w-md mx-auto">
-        <div class="bg-white rounded-3xl p-5 shadow-sm border border-slate-50 mb-6 mt-2">
-            <div class="flex items-center gap-3 mb-4">
-                <input type="text" id="desc-input" placeholder="Note..." class="flex-1 text-sm font-medium border-none focus:ring-0 p-0 placeholder:text-slate-300">
-                <input type="number" id="amount-input" placeholder="0.00" class="w-24 text-right text-xl font-bold border-none focus:ring-0 p-0 text-slate-800">
-            </div>
-
-            <p class="text-[10px] font-bold text-slate-400 mb-2 uppercase">Select Pocket</p>
-            <div id="pocket-selector" class="flex gap-3 overflow-x-auto pb-4 hide-scroll">
-                </div>
-
-            <div class="grid grid-cols-2 gap-3 mt-2">
-                <button onclick="addRecord('expense')" class="bg-red-500 text-slate-900 py-3 rounded-2xl font-bold text-sm active:bg-slate-100 transition">รายจ่าย</button>
-                <button onclick="addRecord('income')" class="bg-green-500 text-white py-3 rounded-2xl font-bold text-sm shadow-md shadow-blue-100 active:scale-95 transition">รายรับ</button>
-            </div>
+        <div class="flex gap-2 mt-1">
+          <button id="btn-goto-stats" class="w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center border border-white/10 transition-all active:scale-90">
+            <i class="fas fa-chart-pie text-sm"></i>
+          </button>
+          <button id="btn-open-add" class="w-10 h-10 bg-blue-500 hover:bg-blue-400 rounded-full flex items-center justify-center shadow-lg shadow-blue-900/40 transition-all active:scale-90">
+            <i class="fas fa-plus text-sm"></i>
+          </button>
         </div>
+      </div>
+      <div class="flex gap-2">
+        <button class="period-tab active" data-p="week" id="pt-week">สัปดาห์นี้</button>
+        <button class="period-tab" data-p="month" id="pt-month">เดือนนี้</button>
+        <button class="period-tab" data-p="all" id="pt-all">ทั้งหมด</button>
+      </div>
+    </div>
+  </div>
 
-        <div id="history-list" class="space-y-2">
-            </div>
+  <div class="max-w-md mx-auto px-4 -mt-10">
+
+    <!-- TAB MAIN -->
+    <div id="tab-main" class="tab-panel active">
+      <div class="flex gap-2 overflow-x-auto no-scroll pb-2 mb-3" id="filter-chips">
+        <button class="filter-chip active" data-cat="all">ทั้งหมด</button>
+      </div>
+      <div id="history-list" class="space-y-2 pb-4">
+        <div class="skeleton h-16"></div>
+        <div class="skeleton h-16"></div>
+        <div class="skeleton h-16"></div>
+      </div>
     </div>
 
-    <div id="tab-config" class="hidden p-6 max-w-md mx-auto">
-        <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100">
-            <h3 class="font-bold text-slate-800 mb-4">New Cloud Pocket</h3>
-            <div class="space-y-4">
-                <input type="text" id="new-cat-name" placeholder="ชื่อพ็อกเก็ต..." class="w-full bg-slate-50 border-none p-3 rounded-xl text-sm outline-none">
-                
-                <p class="text-[10px] font-bold text-slate-400 uppercase">เลือกสีและไอคอน</p>
-                <div class="flex gap-2">
-                    <input type="color" id="new-cat-color" value="#3b82f6" class="w-10 h-10 rounded-lg bg-transparent border-none cursor-pointer">
-                    <select id="new-cat-icon" class="flex-1 bg-slate-50 border-none rounded-xl px-3 text-sm text-slate-600 outline-none">
-                        <option value="fa-wallet">💼 Wallet</option>
-                        <option value="fa-utensils">🍴 Food</option>
-                        <option value="fa-car">🚗 Travel</option>
-                        <option value="fa-gamepad">🎮 Game</option>
-                        <option value="fa-heart">💖 Health</option>
-                        <option value="fa-shopping-cart">🛒 Shop</option>
-                        <option value="fa-house">🏠 Rent</option>
-                    </select>
-                </div>
-                
-                <button onclick="addNewCategory()" class="w-full bg-blue-500 text-white py-3 rounded-xl font-bold text-sm mt-2">สร้างพ็อกเก็ต</button>
-                <button onclick="switchTab('main')" class="w-full text-slate-400 text-xs font-medium">ยกเลิก</button>
-            </div>
+    <!-- TAB STATS -->
+    <div id="tab-stats" class="tab-panel pt-2">
+      <div class="bg-white rounded-[2rem] p-6 shadow-lg mb-4 slide-up">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="font-bold text-slate-800 text-sm">ภาพรวมค่าใช้จ่าย</h3>
+          <span id="stat-month-label" class="text-[10px] font-bold text-slate-400 uppercase"></span>
         </div>
-        
-        <div id="pocket-manager" class="mt-6 space-y-2"></div>
-    </div>
-
-    <div id="tab-stats" class="hidden p-6 max-w-md mx-auto">
-        <div class="bg-white rounded-[2rem] p-6 shadow-sm mb-4 flex justify-center">
-            <div style="width: 180px; height: 180px;">
-                <canvas id="miniChart"></canvas>
+        <div class="flex items-center gap-6">
+          <div class="relative w-32 h-32 flex-shrink-0">
+            <canvas id="ultimateChart"></canvas>
+            <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+              <span class="text-[9px] text-slate-400 font-bold uppercase">จ่ายออก</span>
+              <span id="stat-total-exp" class="text-base font-bold text-slate-800">฿ 0</span>
             </div>
+          </div>
+          <div class="flex-1 space-y-1.5 text-xs" id="stat-legend"></div>
         </div>
-        <div id="stat-list" class="space-y-2"></div>
+      </div>
+      <div id="stat-budget-cards" class="space-y-3 mb-4"></div>
+      <div id="stat-list" class="space-y-2 pb-4"></div>
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, doc, onSnapshot, addDoc, deleteDoc, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    <!-- TAB CONFIG -->
+    <div id="tab-config" class="tab-panel pt-2 pb-10">
+      <div class="bg-white p-6 rounded-[2rem] shadow-lg slide-up">
+        <h3 class="font-bold text-slate-800 mb-5 flex items-center gap-2 text-sm">
+          <span class="w-7 h-7 bg-blue-500 rounded-xl flex items-center justify-center">
+            <i class="fas fa-wallet text-white text-[10px]"></i>
+          </span>
+          สร้าง Cloud Pocket ใหม่
+        </h3>
+        <div class="space-y-3">
+          <div class="bg-slate-50 p-4 rounded-2xl">
+            <p class="text-[10px] font-bold text-slate-400 mb-1 uppercase">ชื่อพ็อกเก็ต</p>
+            <input type="text" id="new-cat-name" placeholder="เช่น ค่าอาหาร, เที่ยว..." class="w-full bg-transparent border-none p-0 text-sm font-bold outline-none text-slate-800 placeholder:text-slate-300">
+          </div>
+          <div class="bg-slate-50 p-4 rounded-2xl">
+            <p class="text-[10px] font-bold text-slate-400 mb-1 uppercase">วงเงิน/เดือน (ไม่บังคับ)</p>
+            <div class="flex items-center gap-2">
+              <span class="text-slate-400 text-sm font-bold">฿</span>
+              <input type="number" id="new-cat-budget" placeholder="0" class="w-full bg-transparent border-none p-0 text-sm font-bold outline-none text-slate-800 placeholder:text-slate-300">
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div class="bg-slate-50 p-4 rounded-2xl">
+              <p class="text-[10px] font-bold text-slate-400 mb-2 uppercase">โทนสี</p>
+              <input type="color" id="new-cat-color" value="#3b82f6" class="w-full h-6 bg-transparent border-none cursor-pointer rounded-lg">
+            </div>
+            <div class="bg-slate-50 p-4 rounded-2xl">
+              <p class="text-[10px] font-bold text-slate-400 mb-2 uppercase">ไอคอน</p>
+              <select id="new-cat-icon" class="w-full bg-transparent border-none text-xs font-bold outline-none text-slate-700">
+                <option value="fa-wallet">💼 กระเป๋า</option>
+                <option value="fa-utensils">🍴 อาหาร</option>
+                <option value="fa-car">🚗 เดินทาง</option>
+                <option value="fa-gamepad">🎮 เกม</option>
+                <option value="fa-shopping-bag">🛍️ ช้อปปิ้ง</option>
+                <option value="fa-bolt">⚡ บิล</option>
+                <option value="fa-heart">💖 สุขภาพ</option>
+                <option value="fa-plane">✈️ ท่องเที่ยว</option>
+                <option value="fa-book">📚 การศึกษา</option>
+                <option value="fa-coffee">☕ คาเฟ่</option>
+                <option value="fa-home">🏠 บ้าน</option>
+                <option value="fa-dumbbell">💪 ออกกำลัง</option>
+                <option value="fa-gift">🎁 ของขวัญ</option>
+                <option value="fa-paw">🐾 สัตว์เลี้ยง</option>
+              </select>
+            </div>
+          </div>
+          <button id="add-cat-btn" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold shadow-lg shadow-blue-100 transition-all active:scale-95 text-sm">
+            ยืนยันการสร้าง
+          </button>
+        </div>
+      </div>
+      <div class="mt-6">
+        <p class="text-[10px] font-bold text-slate-400 mb-3 px-1 uppercase tracking-wider">จัดการ Pockets</p>
+        <div id="pocket-manager" class="space-y-2"></div>
+      </div>
+    </div>
 
-        // --- ใช้ Config ของคุณตรงนี้ ---
-        const firebaseConfig = {
-            apiKey: "", 
-            authDomain: "puim-f05ea.firebaseapp.com",
-            projectId: "puim-f05ea",
-            appId: "1:773999792990:web:bb24c28374adf539635cf"
-        };
+  </div>
+</div>
 
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        
-        let categories = {};
-        let selectedPocket = "";
-        let myChart;
+<!-- BOTTOM NAV -->
+<nav class="fixed bottom-0 inset-x-0 bg-white/90 backdrop-blur-xl border-t border-slate-100 z-50">
+  <div class="max-w-md mx-auto flex justify-around items-center py-3 px-4">
+    <button class="nav-btn active flex flex-col items-center" id="nav-main">
+      <i class="fas fa-house text-lg"></i>
+      <span class="text-[9px] font-bold">หน้าแรก</span>
+      <div class="nav-dot"></div>
+    </button>
+    <button class="nav-btn flex flex-col items-center" id="nav-stats">
+      <i class="fas fa-chart-pie text-lg"></i>
+      <span class="text-[9px] font-bold">สถิติ</span>
+      <div class="nav-dot"></div>
+    </button>
+    <button class="flex flex-col items-center" id="nav-add-center">
+      <div class="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-200 -mt-5 mb-1 transition-all active:scale-90">
+        <i class="fas fa-plus text-white text-lg"></i>
+      </div>
+    </button>
+    <button class="nav-btn flex flex-col items-center" id="nav-export">
+      <i class="fas fa-download text-lg"></i>
+      <span class="text-[9px] font-bold">Export</span>
+      <div class="nav-dot"></div>
+    </button>
+    <button class="nav-btn flex flex-col items-center" id="nav-config">
+      <i class="fas fa-sliders text-lg"></i>
+      <span class="text-[9px] font-bold">ตั้งค่า</span>
+      <div class="nav-dot"></div>
+    </button>
+  </div>
+</nav>
 
-        // Load Categories with Icons
-        onSnapshot(collection(db, "categories"), (snap) => {
-            const selector = document.getElementById('pocket-selector');
-            const manager = document.getElementById('pocket-manager');
-            selector.innerHTML = ''; manager.innerHTML = '';
-            categories = {};
+<!-- ADD MODAL -->
+<div id="add-modal" class="modal-backdrop hidden">
+  <div class="modal-sheet">
+    <div class="w-10 h-1.5 bg-slate-200 rounded-full mx-auto mb-5"></div>
+    <h3 class="font-bold text-slate-800 mb-4 text-sm flex items-center gap-2">
+      <i class="fas fa-plus-circle text-blue-500"></i> บันทึกรายการ
+    </h3>
+    <div class="space-y-3">
+      <div class="bg-slate-50 rounded-2xl p-4 flex items-center gap-3">
+        <i class="fas fa-pen text-slate-300 text-xs"></i>
+        <input type="text" id="desc-input" placeholder="รายการนี้คืออะไร..." class="flex-1 bg-transparent border-none text-sm font-medium outline-none placeholder:text-slate-300 text-slate-800">
+      </div>
+      <div class="bg-slate-50 rounded-2xl p-4 flex items-center gap-3">
+        <span class="text-blue-400 font-bold text-sm">฿</span>
+        <input type="number" id="amount-input" placeholder="0.00" inputmode="decimal" class="flex-1 bg-transparent border-none text-2xl font-bold outline-none placeholder:text-slate-200 text-slate-800">
+      </div>
+      <div>
+        <p class="text-[10px] font-bold text-slate-400 mb-2 uppercase tracking-wider px-1">Cloud Pocket</p>
+        <div id="pocket-selector" class="flex gap-2 overflow-x-auto no-scroll pb-1 px-0.5">
+          <div class="skeleton w-16 h-16 rounded-2xl flex-shrink-0"></div>
+          <div class="skeleton w-16 h-16 rounded-2xl flex-shrink-0"></div>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-3 pt-1">
+        <button id="btn-expense" class="bg-slate-900 text-white py-4 rounded-2xl font-bold text-sm transition-all active:scale-95 flex items-center justify-center gap-2">
+          <i class="fas fa-arrow-up text-red-400 text-xs"></i> จ่ายออก
+        </button>
+        <button id="btn-income" class="bg-blue-600 text-white py-4 rounded-2xl font-bold text-sm shadow-lg shadow-blue-200 transition-all active:scale-95 flex items-center justify-center gap-2">
+          <i class="fas fa-arrow-down text-green-300 text-xs"></i> รับเข้า
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
 
-            snap.forEach(d => {
-                const cat = d.data();
-                categories[cat.name] = { color: cat.color, icon: cat.icon || 'fa-wallet' };
+<!-- DELETE MODAL -->
+<div id="del-modal" class="modal-backdrop hidden">
+  <div class="modal-sheet">
+    <div class="w-10 h-1.5 bg-slate-200 rounded-full mx-auto mb-5"></div>
+    <div class="text-center mb-6">
+      <div class="w-14 h-14 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-3">
+        <i class="fas fa-trash text-red-400 text-lg"></i>
+      </div>
+      <h3 class="font-bold text-slate-800 mb-1">ลบรายการนี้?</h3>
+      <p id="del-desc" class="text-xs text-slate-400 font-medium"></p>
+    </div>
+    <div class="grid grid-cols-2 gap-3">
+      <button id="btn-del-cancel" class="py-3.5 rounded-2xl bg-slate-100 font-bold text-sm text-slate-600 transition-all active:scale-95">ยกเลิก</button>
+      <button id="btn-del-confirm" class="py-3.5 rounded-2xl bg-red-500 text-white font-bold text-sm shadow-lg shadow-red-100 transition-all active:scale-95">ลบเลย</button>
+    </div>
+  </div>
+</div>
 
-                selector.innerHTML += `
-                    <div onclick="selectPocket('${cat.name}', this)" class="pocket-item min-w-[70px] flex flex-col items-center p-3 rounded-2xl bg-white border border-slate-100 cursor-pointer">
-                        <div class="w-8 h-8 rounded-xl mb-1 flex items-center justify-center text-white text-xs shadow-sm" style="background-color: ${cat.color}">
-                            <i class="fas ${cat.icon || 'fa-wallet'}"></i>
-                        </div>
-                        <span class="text-[9px] font-bold text-slate-500 truncate w-full text-center">${cat.name}</span>
-                    </div>`;
+<script type="module">
+import { initializeApp }      from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, collection, doc, onSnapshot,
+         addDoc, deleteDoc, query, orderBy, serverTimestamp }
+                               from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-                manager.innerHTML += `
-                    <div class="flex items-center justify-between bg-white p-3 rounded-xl border border-slate-50">
-                        <div class="flex items-center gap-3 text-sm font-bold">
-                            <i class="fas ${cat.icon || 'fa-wallet'}" style="color: ${cat.color}"></i>
-                            <span>${cat.name}</span>
-                        </div>
-                        <button onclick="deleteDoc(doc(window.db, 'categories', '${d.id}'))" class="text-slate-200 hover:text-rose-400"><i class="fas fa-times"></i></button>
-                    </div>`;
-            });
-        });
+// ── Firebase ──
+const firebaseConfig = {
+  apiKey:            "AIzaSyANzxX65qqpLWnyl_nk7dORQQDRXK25CD8",
+  authDomain:        "puim-f05ea.firebaseapp.com",
+  projectId:         "puim-f05ea",
+  storageBucket:     "puim-f05ea.firebasestorage.app",
+  messagingSenderId: "773999792990",
+  appId:             "1:773999792990:web:bb24c283744adf539635cf",
+  measurementId:     "G-LE2ZM330V2"
+};
+const app = initializeApp(firebaseConfig);
+const db  = getFirestore(app);
 
-        window.selectPocket = (name, el) => {
-            selectedPocket = name;
-            document.querySelectorAll('.pocket-item').forEach(opt => opt.classList.remove('pocket-selected'));
-            el.classList.add('pocket-selected');
-        };
+// ── State ──
+const S = {
+  cats:{}, txs:[], selectedPocket:"",
+  filterCat:"all", period:"week",
+  deleteTarget:null, chart:null
+};
 
-        // Real-time Data
-        onSnapshot(query(collection(db, "transactions"), orderBy("timestamp", "desc")), (snap) => {
-            const list = document.getElementById('history-list');
-            list.innerHTML = '';
-            let balance = 0, expData = {};
+// ── Helpers ──
+const $  = id => document.getElementById(id);
+const toast = (msg, dur=2500) => {
+  const t=document.createElement('div');
+  t.className='toast'; t.textContent=msg;
+  document.body.appendChild(t);
+  setTimeout(()=>{t.style.opacity='0';t.style.transition='opacity .4s';},dur-400);
+  setTimeout(()=>t.remove(),dur);
+};
 
-            snap.forEach(d => {
-                const r = d.data();
-                const amt = parseFloat(r.amount);
-                balance += amt;
-                const cat = categories[r.category] || {color: '#cbd5e1', icon: 'fa-tag'};
-                if(amt < 0) expData[r.category] = (expData[r.category] || 0) + Math.abs(amt);
+// ── Filter by period ──
+const filterByPeriod = txs => {
+  if(S.period==='all') return txs;
+  const now=new Date(), start=new Date(now);
+  if(S.period==='week') start.setDate(now.getDate()-7);
+  if(S.period==='month'){start.setDate(1);start.setHours(0,0,0,0);}
+  return txs.filter(t=>{
+    if(!t.timestamp) return true;
+    const d=t.timestamp.toDate?t.timestamp.toDate():new Date(t.timestamp);
+    return d>=start;
+  });
+};
 
-                list.innerHTML += `
-                    <div class="bg-white p-3 rounded-2xl flex items-center gap-3 border border-slate-50">
-                        <div class="w-9 h-9 rounded-xl flex items-center justify-center text-white text-xs" style="background: ${cat.color}">
-                            <i class="fas ${cat.icon}"></i>
-                        </div>
-                        <div class="flex-1">
-                            <p class="font-bold text-slate-700 text-xs">${r.text}</p>
-                            <p class="text-[9px] text-slate-400 font-medium">${r.category}</p>
-                        </div>
-                        <div class="text-right">
-                            <p class="text-sm font-bold ${amt < 0 ? 'text-slate-900' : 'text-blue-500'}">${amt < 0 ? '-' : '+'}${Math.abs(amt).toLocaleString()}</p>
-                        </div>
-                    </div>`;
-            });
-            document.getElementById('total-balance').innerText = `฿ ${balance.toLocaleString()}`;
-            updateChart(expData);
-        });
+// ── Header ──
+const updateHeader = () => {
+  const txs=filterByPeriod(S.txs);
+  let bal=0,inc=0,exp=0;
+  txs.forEach(t=>{const a=parseFloat(t.amount);bal+=a;if(a>=0)inc+=a;else exp+=Math.abs(a);});
+  $('total-balance').textContent='฿ '+bal.toLocaleString();
+  $('hdr-income').textContent='฿'+inc.toLocaleString();
+  $('hdr-expense').textContent='฿'+exp.toLocaleString();
+};
 
-        window.updateChart = (data) => {
-            const ctx = document.getElementById('miniChart').getContext('2d');
-            const labels = Object.keys(data);
-            const colors = labels.map(l => categories[l]?.color || "#e2e8f0");
-            if(myChart) myChart.destroy();
-            myChart = new Chart(ctx, {
-                type: 'doughnut',
-                data: { labels, datasets: [{ data: Object.values(data), backgroundColor: colors, borderWidth: 4, borderColor: '#fff' }] },
-                options: { cutout: '85%', plugins: { legend: { display: false } } }
-            });
-            document.getElementById('stat-list').innerHTML = labels.map(l => `
-                <div class="flex justify-between bg-white p-3 rounded-xl text-xs font-bold border border-slate-50">
-                    <span style="color: ${categories[l]?.color}">● ${l}</span>
-                    <span>฿ ${data[l].toLocaleString()}</span>
-                </div>`).join('');
-        };
+// ── Pocket selector (inside modal) ──
+const renderPocketSelector = () => {
+  const sel=$('pocket-selector');
+  if(!Object.keys(S.cats).length){
+    sel.innerHTML=`<div class="text-xs text-slate-300 font-medium px-2 py-4">ยังไม่มี Pocket — ไปสร้างก่อน</div>`;
+    return;
+  }
+  sel.innerHTML=Object.entries(S.cats).map(([name,cat])=>`
+    <div data-pocket="${name}"
+         class="pocket-item flex-shrink-0 flex flex-col items-center p-2.5 rounded-2xl bg-slate-50 border-2 border-transparent w-[72px]">
+      <div class="w-9 h-9 rounded-xl mb-1.5 flex items-center justify-center text-white text-xs shadow-md"
+           style="background:${cat.color}">
+        <i class="fas ${cat.icon}"></i>
+      </div>
+      <span class="text-[9px] font-bold text-slate-600 truncate w-full text-center leading-tight">${name}</span>
+    </div>`).join('');
 
-        window.addRecord = async (type) => {
-            const desc = document.getElementById('desc-input').value;
-            const amt = document.getElementById('amount-input').value;
-            if(!desc || !amt || !selectedPocket) return;
-            await addDoc(collection(db, "transactions"), {
-                text: desc, amount: type === 'expense' ? -Math.abs(amt) : Math.abs(amt),
-                category: selectedPocket, timestamp: serverTimestamp()
-            });
-            document.getElementById('desc-input').value = ''; document.getElementById('amount-input').value = '';
-        };
+  sel.querySelectorAll('.pocket-item').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      S.selectedPocket=el.dataset.pocket;
+      sel.querySelectorAll('.pocket-item').forEach(e=>e.classList.remove('pocket-selected'));
+      el.classList.add('pocket-selected');
+    });
+  });
 
-        window.addNewCategory = async () => {
-            const name = document.getElementById('new-cat-name').value;
-            const color = document.getElementById('new-cat-color').value;
-            const icon = document.getElementById('new-cat-icon').value;
-            if(!name) return;
-            await addDoc(collection(db, "categories"), { name, color, icon });
-            document.getElementById('new-cat-name').value = '';
-            switchTab('main');
-        };
+  if(S.selectedPocket){
+    const el=sel.querySelector(`[data-pocket="${S.selectedPocket}"]`);
+    if(el) el.classList.add('pocket-selected');
+  }
+};
 
-        window.switchTab = (t) => {
-            ['main', 'stats', 'config'].forEach(id => {
-                document.getElementById('tab-'+id).classList.toggle('hidden', id !== t);
-                if(id !== 'config') {
-                    const btn = document.getElementById('btn-'+id);
-                    btn.className = id === t ? 'flex-1 py-1.5 rounded-xl text-xs font-bold bg-slate-900 text-white transition-all' : 'flex-1 py-1.5 rounded-xl text-xs font-bold text-slate-400 transition-all';
-                }
-            });
-        };
-        window.db = db; window.deleteDoc = deleteDoc; window.doc = doc;
-    </script>
+// ── Pocket manager ──
+const renderPocketManager = () => {
+  const mgr=$('pocket-manager');
+  if(!Object.keys(S.cats).length){
+    mgr.innerHTML=`<div class="empty"><i class="fas fa-box-open"></i><p>ยังไม่มี Pocket</p></div>`;
+    return;
+  }
+  mgr.innerHTML=Object.entries(S.cats).map(([name,cat])=>`
+    <div class="flex items-center justify-between bg-white p-4 rounded-2xl shadow-sm border border-slate-50">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl flex items-center justify-center text-white text-xs" style="background:${cat.color}">
+          <i class="fas ${cat.icon}"></i>
+        </div>
+        <div>
+          <p class="font-bold text-slate-800 text-sm">${name}</p>
+          <p class="text-[10px] text-slate-400">${cat.budget?'วงเงิน ฿'+Number(cat.budget).toLocaleString()+'/เดือน':'ไม่มีวงเงิน'}</p>
+        </div>
+      </div>
+      <button data-del-pocket="${cat.id}" class="w-8 h-8 rounded-xl flex items-center justify-center text-slate-200 hover:text-red-400 hover:bg-red-50 transition-all">
+        <i class="fas fa-trash text-xs"></i>
+      </button>
+    </div>`).join('');
+
+  mgr.querySelectorAll('[data-del-pocket]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      if(!confirm('ลบ Pocket นี้?')) return;
+      await deleteDoc(doc(db,'categories',btn.dataset.delPocket));
+      toast('🗑️ ลบ Pocket แล้ว');
+    });
+  });
+};
+
+// ── Filter chips ──
+const renderFilterChips = () => {
+  const chips=$('filter-chips');
+  chips.innerHTML=`<button class="filter-chip ${S.filterCat==='all'?'active':''}" data-cat="all">ทั้งหมด</button>`;
+  chips.innerHTML+=Object.entries(S.cats).map(([name,cat])=>
+    `<button class="filter-chip ${S.filterCat===name?'active':''}" data-cat="${name}">
+      <span style="color:${cat.color}">●</span> ${name}
+    </button>`).join('');
+  chips.querySelectorAll('.filter-chip').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      S.filterCat=btn.dataset.cat;
+      chips.querySelectorAll('.filter-chip').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      renderHistory();
+    });
+  });
+};
+
+// ── History ──
+const renderHistory = () => {
+  const list=$('history-list');
+  let txs=filterByPeriod(S.txs);
+  if(S.filterCat!=='all') txs=txs.filter(t=>t.category===S.filterCat);
+  if(!txs.length){
+    list.innerHTML=`<div class="empty slide-up"><i class="fas fa-receipt"></i><p>ยังไม่มีรายการ<br>กด + เพื่อเพิ่มรายการแรก</p></div>`;
+    return;
+  }
+  list.innerHTML=txs.map(t=>{
+    const amt=parseFloat(t.amount);
+    const cat=S.cats[t.category]||{color:'#cbd5e1',icon:'fa-tag'};
+    const isExp=amt<0;
+    const dateStr=t.timestamp?(()=>{
+      const d=t.timestamp.toDate?t.timestamp.toDate():new Date(t.timestamp);
+      return d.toLocaleDateString('th-TH',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+    })():'';
+    return `
+    <div class="record-row bg-white p-3 rounded-2xl flex items-center gap-3 shadow-sm border border-slate-50/80 slide-up">
+      <div class="w-11 h-11 rounded-2xl flex items-center justify-center text-xs flex-shrink-0"
+           style="background:${cat.color}18;color:${cat.color}">
+        <i class="fas ${cat.icon}"></i>
+      </div>
+      <div class="flex-1 min-w-0">
+        <p class="font-bold text-slate-800 text-[13px] leading-tight truncate">${t.text}</p>
+        <p class="text-[10px] text-slate-400 font-medium mt-0.5">
+          <span style="color:${cat.color}80">●</span> ${t.category}
+          ${dateStr?`<span class="ml-2 opacity-60">${dateStr}</span>`:''}
+        </p>
+      </div>
+      <div class="text-right flex-shrink-0">
+        <p class="text-sm font-bold ${isExp?'text-slate-900':'text-blue-600'}">
+          ${isExp?'−':'+'}฿${Math.abs(amt).toLocaleString()}
+        </p>
+        <button data-del-tx="${t.id}" data-del-text="${t.text}" data-del-amt="${Math.abs(amt)}"
+          class="text-[10px] text-slate-200 hover:text-red-400 transition-colors mt-0.5">ลบ</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  list.querySelectorAll('[data-del-tx]').forEach(btn=>{
+    btn.addEventListener('click', ()=>showDelModal(btn.dataset.delTx, btn.dataset.delText, btn.dataset.delAmt));
+  });
+};
+
+// ── Stats ──
+const renderStats = () => {
+  const now=new Date();
+  $('stat-month-label').textContent=now.toLocaleDateString('th-TH',{month:'long',year:'numeric'});
+  const txs=filterByPeriod(S.txs);
+  let expData={},expSum=0;
+  txs.forEach(t=>{const a=parseFloat(t.amount);if(a<0){expSum+=Math.abs(a);expData[t.category]=(expData[t.category]||0)+Math.abs(a);}});
+  $('stat-total-exp').textContent='฿ '+expSum.toLocaleString();
+  updateChart(expData);
+
+  $('stat-legend').innerHTML=Object.entries(expData).sort((a,b)=>b[1]-a[1]).slice(0,4).map(([l,v])=>`
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-1.5">
+        <div class="w-2 h-2 rounded-full flex-shrink-0" style="background:${S.cats[l]?.color||'#e2e8f0'}"></div>
+        <span class="text-slate-600 font-medium truncate text-[11px]">${l}</span>
+      </div>
+      <span class="font-bold text-slate-800 text-[11px]">฿${v.toLocaleString()}</span>
+    </div>`).join('');
+
+  const bc=$('stat-budget-cards');
+  const bps=Object.entries(S.cats).filter(([,c])=>c.budget>0);
+  bc.innerHTML=bps.length?`<p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1 mb-2">วงเงิน Pockets</p>`+bps.map(([name,cat])=>{
+    const spent=expData[name]||0;
+    const pct=Math.min(100,Math.round((spent/cat.budget)*100));
+    const over=spent>cat.budget;
+    const barColor=over?'#ef4444':(pct>75?'#f97316':cat.color);
+    return `
+    <div class="bg-white p-4 rounded-2xl shadow-sm">
+      <div class="flex items-center justify-between mb-2">
+        <div class="flex items-center gap-2">
+          <div class="w-7 h-7 rounded-xl flex items-center justify-center text-white text-[10px]" style="background:${cat.color}">
+            <i class="fas ${cat.icon}"></i>
+          </div>
+          <span class="font-bold text-slate-800 text-xs">${name}</span>
+        </div>
+        <span class="text-[10px] font-bold ${over?'text-red-500':'text-slate-400'}">฿${spent.toLocaleString()} / ฿${Number(cat.budget).toLocaleString()}</span>
+      </div>
+      <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
+        <div class="h-full rounded-full budget-bar-inner" style="width:${pct}%;background:${barColor}"></div>
+      </div>
+      <div class="flex justify-between mt-1">
+        <span class="text-[9px] text-slate-400">${pct}%</span>
+        <span class="text-[9px] font-bold ${over?'text-red-500':'text-slate-400'}">
+          ${over?`เกิน ฿${(spent-cat.budget).toLocaleString()}`:`เหลือ ฿${(cat.budget-spent).toLocaleString()}`}
+        </span>
+      </div>
+    </div>`;
+  }).join(''):'';
+
+  $('stat-list').innerHTML=Object.entries(expData).sort((a,b)=>b[1]-a[1]).map(([l,v])=>{
+    const cat=S.cats[l]||{};
+    const pct=expSum>0?Math.round((v/expSum)*100):0;
+    return `
+    <div class="bg-white p-4 rounded-2xl shadow-sm flex items-center gap-3">
+      <div class="w-8 h-8 rounded-xl flex items-center justify-center text-white text-[10px]" style="background:${cat.color||'#e2e8f0'}">
+        <i class="fas ${cat.icon||'fa-tag'}"></i>
+      </div>
+      <div class="flex-1">
+        <div class="flex justify-between items-center mb-1">
+          <span class="text-xs font-bold text-slate-700">${l}</span>
+          <span class="text-xs font-bold text-slate-800">฿${v.toLocaleString()}</span>
+        </div>
+        <div class="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+          <div class="h-full rounded-full" style="width:${pct}%;background:${cat.color||'#e2e8f0'}"></div>
+        </div>
+      </div>
+      <span class="text-[10px] font-bold text-slate-400">${pct}%</span>
+    </div>`;
+  }).join('')||`<div class="empty"><i class="fas fa-chart-pie"></i><p>ยังไม่มีข้อมูล</p></div>`;
+};
+
+const updateChart = data => {
+  const ctx=$('ultimateChart').getContext('2d');
+  const labels=Object.keys(data);
+  const colors=labels.map(l=>S.cats[l]?.color||'#e2e8f0');
+  if(S.chart) S.chart.destroy();
+  if(!labels.length){S.chart=null;return;}
+  S.chart=new Chart(ctx,{
+    type:'doughnut',
+    data:{labels,datasets:[{data:Object.values(data),backgroundColor:colors,borderWidth:3,borderColor:'#fff'}]},
+    options:{cutout:'78%',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` ฿${c.raw.toLocaleString()}`}}},animation:{animateRotate:true,duration:600}}
+  });
+};
+
+// ── Tab switching ──
+const switchTab = t => {
+  ['main','stats','config'].forEach(id=>{
+    $('tab-'+id).classList.toggle('active', id===t);
+  });
+  ['main','stats','config'].forEach(id=>{
+    const btn=$('nav-'+id);
+    if(btn){btn.classList.toggle('active',id===t);btn.classList.add('nav-btn');}
+  });
+  $('app-content').scrollTo({top:0,behavior:'smooth'});
+};
+
+// ── Add modal ──
+const openAddModal = () => {
+  $('add-modal').classList.remove('hidden');
+  renderPocketSelector();
+  setTimeout(()=>$('desc-input').focus(), 200);
+};
+const closeAddModal = () => $('add-modal').classList.add('hidden');
+
+// ── Del modal ──
+const showDelModal = (id, text, amt) => {
+  S.deleteTarget=id;
+  $('del-desc').textContent=`"${text}" — ฿${Number(amt).toLocaleString()}`;
+  $('del-modal').classList.remove('hidden');
+};
+const closeDelModal = () => { S.deleteTarget=null; $('del-modal').classList.add('hidden'); };
+
+// ── Add record ──
+const addRecord = async type => {
+  const desc=$('desc-input').value.trim();
+  const amt=parseFloat($('amount-input').value);
+  if(!desc){toast('⚠️ กรุณาใส่คำอธิบาย');return;}
+  if(!amt||isNaN(amt)){toast('⚠️ กรุณาใส่จำนวนเงิน');return;}
+  if(!S.selectedPocket){toast('⚠️ เลือก Pocket ก่อนนะ');return;}
+  const btn=$(type==='expense'?'btn-expense':'btn-income');
+  const orig=btn.innerHTML; btn.innerHTML=`<div class="spinner"></div>`; btn.disabled=true;
+  try {
+    await addDoc(collection(db,'transactions'),{
+      text:desc, amount:type==='expense'?-Math.abs(amt):Math.abs(amt),
+      category:S.selectedPocket, timestamp:serverTimestamp()
+    });
+    $('desc-input').value=''; $('amount-input').value='';
+    closeAddModal();
+    toast(type==='expense'?'💸 บันทึกรายจ่ายแล้ว':'💰 บันทึกรายรับแล้ว');
+  } catch(e){ toast('❌ '+e.message); }
+  finally { btn.innerHTML=orig; btn.disabled=false; }
+};
+
+// ── Add category ──
+const addNewCategory = async () => {
+  const name=$('new-cat-name').value.trim();
+  const color=$('new-cat-color').value;
+  const icon=$('new-cat-icon').value;
+  const budget=parseFloat($('new-cat-budget').value)||0;
+  if(!name){toast('⚠️ ใส่ชื่อ Pocket ด้วย');return;}
+  if(S.cats[name]){toast('⚠️ มี Pocket นี้อยู่แล้ว');return;}
+  const btn=$('add-cat-btn');
+  btn.innerHTML=`<div class="spinner mx-auto"></div>`; btn.disabled=true;
+  try {
+    await addDoc(collection(db,'categories'),{name,color,icon,budget});
+    $('new-cat-name').value=''; $('new-cat-budget').value='';
+    toast('✅ สร้าง Pocket แล้ว!');
+    switchTab('main');
+  } catch(e){ toast('❌ '+e.message); }
+  finally { btn.innerHTML='ยืนยันการสร้าง'; btn.disabled=false; }
+};
+
+// ── Export CSV ──
+const exportCSV = () => {
+  const txs=filterByPeriod(S.txs);
+  if(!txs.length){toast('⚠️ ไม่มีรายการ');return;}
+  const rows=[['วันที่','รายการ','หมวด','จำนวน']];
+  txs.forEach(t=>{
+    const d=t.timestamp?.toDate?t.timestamp.toDate():new Date();
+    rows.push([d.toLocaleDateString('th-TH'),t.text,t.category,t.amount]);
+  });
+  const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob); a.download=`financepro_${new Date().toLocaleDateString('en-CA')}.csv`; a.click();
+  toast('📥 Export สำเร็จ!');
+};
+
+// ════ WIRE UP ALL EVENTS (no onclick in HTML) ════
+
+// Header buttons
+$('btn-goto-stats').addEventListener('click', ()=>switchTab('stats'));
+$('btn-open-add').addEventListener('click', openAddModal);
+
+// Period tabs
+['week','month','all'].forEach(p=>{
+  $('pt-'+p).addEventListener('click', ()=>{
+    S.period=p;
+    document.querySelectorAll('.period-tab').forEach(b=>b.classList.toggle('active',b.dataset.p===p));
+    renderHistory(); updateHeader(); renderStats();
+  });
+});
+
+// Bottom nav
+$('nav-main').addEventListener('click',   ()=>switchTab('main'));
+$('nav-stats').addEventListener('click',  ()=>switchTab('stats'));
+$('nav-add-center').addEventListener('click', openAddModal);
+$('nav-export').addEventListener('click', exportCSV);
+$('nav-config').addEventListener('click', ()=>switchTab('config'));
+
+// Add modal backdrop click
+$('add-modal').addEventListener('click', e=>{ if(e.target===$('add-modal')) closeAddModal(); });
+
+// Add modal buttons
+$('btn-expense').addEventListener('click', ()=>addRecord('expense'));
+$('btn-income').addEventListener('click',  ()=>addRecord('income'));
+
+// Del modal buttons
+$('btn-del-cancel').addEventListener('click',  closeDelModal);
+$('btn-del-confirm').addEventListener('click', async ()=>{
+  if(!S.deleteTarget) return;
+  try { await deleteDoc(doc(db,'transactions',S.deleteTarget)); toast('🗑️ ลบรายการแล้ว'); }
+  catch(e){ toast('❌ '+e.message); }
+  closeDelModal();
+});
+$('del-modal').addEventListener('click', e=>{ if(e.target===$('del-modal')) closeDelModal(); });
+
+// Config button
+$('add-cat-btn').addEventListener('click', addNewCategory);
+
+// ════ FIRESTORE LISTENERS ════
+onSnapshot(collection(db,'categories'), snap=>{
+  S.cats={};
+  snap.forEach(d=>{ const c=d.data(); S.cats[c.name]={color:c.color,icon:c.icon||'fa-wallet',budget:c.budget||0,id:d.id}; });
+  renderPocketSelector();
+  renderPocketManager();
+  renderFilterChips();
+  renderHistory();
+  renderStats();
+});
+
+onSnapshot(query(collection(db,'transactions'),orderBy('timestamp','desc')), snap=>{
+  S.txs=[];
+  snap.forEach(d=>S.txs.push({id:d.id,...d.data()}));
+  renderHistory();
+  renderStats();
+  updateHeader();
+});
+</script>
 </body>
 </html>
